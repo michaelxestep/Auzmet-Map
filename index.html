@@ -3,7 +3,7 @@
     <title>Auzmet Map</title>
 
     <link rel="stylesheet" type="text/css" href="./style.css" />
-    <script type="module" src="./index.js"></script>
+    <script src="./index.js"></script>
   </head>
   <body>
     <div style="display: none">
@@ -16,9 +16,14 @@
     </div>
     <div id="map"></div>
     <div id="infowindow-content">
-      <span id="place-name" class="title"></span><br />
-      <strong>Place ID:</strong> <span id="place-id"></span><br />
-      <span id="place-address"></span>
+      <strong>Job name:</strong> <span id="place-job-name"></span><br />
+      <strong>Year completed:</strong> <span id="place-year-completed"></span><br />
+      <strong>Status:</strong> <span id="place-status"></span><br />
+      <strong>Job number:</strong> <span id="place-job-number"></span><br />
+      <strong>Sector:</strong> <span id="place-sector"></span><br />
+      <strong>Contractor:</strong> <span id="place-contractor"></span><br />
+      <strong>Address:</strong> <span id="place-project-address"></span><br />
+      <span id="place-link"></span><br />
     </div>
 
     <!-- 
@@ -28,6 +33,7 @@
       https://developers.google.com/maps/documentation/javascript/load-maps-js-api
       for more information.
       -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
     <script
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlCk-atEVMbumOwpDHnUKSos9djbzuEpU&callback=initMap&libraries=places&v=weekly"

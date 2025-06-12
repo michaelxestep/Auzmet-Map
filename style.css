@@ -49,3 +49,7 @@ body {
 #map #infowindow-content {
   display: inline;
 }
+
+.blue-cluster {
+  filter: hue-rotate(200deg) !important;
+}
