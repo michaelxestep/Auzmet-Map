@@ -98,31 +98,10 @@
                 mapTypeId: 'roadmap'
             });
 
-            // Initialize MarkerClusterer
-            markerClusterer = new MarkerClusterer(map, [], {
-                imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m',
-                gridSize: 60,
-                maxZoom: 15,
-                styles: [
-                    {
-                        textColor: 'white',
-                        url: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m1.png',
-                        height: 53,
-                        width: 53
-                    },
-                    {
-                        textColor: 'white',
-                        url: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m2.png',
-                        height: 56,
-                        width: 56
-                    },
-                    {
-                        textColor: 'white',
-                        url: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m3.png',
-                        height: 66,
-                        width: 66
-                    }
-                ]
+            // Initialize MarkerClusterer with the new API
+            markerClusterer = new markerClusterer.MarkerClusterer({ 
+                map: map,
+                markers: []
             });
 
             // Add some initial markers
@@ -133,8 +112,7 @@
             sampleLocations.forEach(location => {
                 const marker = new google.maps.Marker({
                     position: { lat: location.lat, lng: location.lng },
-                    title: location.title,
-                    map: map
+                    title: location.title
                 });
 
                 // Add info window
@@ -166,8 +144,7 @@
 
                 const marker = new google.maps.Marker({
                     position: { lat: lat, lng: lng },
-                    title: `Random Marker ${markers.length + i + 1}`,
-                    map: map
+                    title: `Random Marker ${markers.length + i + 1}`
                 });
 
                 // Add info window
@@ -188,6 +165,11 @@
             
             if (clusteringEnabled) {
                 markerClusterer.addMarkers(newMarkers);
+            } else {
+                // If clustering is disabled, add markers directly to map
+                newMarkers.forEach(marker => {
+                    marker.setMap(map);
+                });
             }
         }
 
@@ -195,7 +177,7 @@
             // Clear all markers from the clusterer
             markerClusterer.clearMarkers();
             
-            // Remove markers from the map
+            // Remove markers from the map (in case clustering is disabled)
             markers.forEach(marker => {
                 marker.setMap(null);
             });
