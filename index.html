@@ -1,32 +1,236 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Simple Marker</title>
-    <!-- The callback parameter is required, so we use console.debug as a noop -->
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlCk-atEVMbumOwpDHnUKSos9djbzuEpU&callback=console.debug&libraries=maps,marker&v=beta">
-    </script>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps with MarkerClusterer</title>
     <style>
-      /* Always set the map height explicitly to define the size of the div
-       * element that contains the map. */
-      gmp-map {
-        height: 100%;
-      }
-
-      /* Optional: Makes the sample page fill the window. */
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        #map {
+            height: 600px;
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #3367d6;
+        }
+        
+        .info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e8f0fe;
+            border-radius: 4px;
+        }
     </style>
-  </head>
-  <body>
-    <gmp-map center="40.12150192260742,-100.45039367675781" zoom="4" map-id="DEMO_MAP_ID">
-      <gmp-advanced-marker position="40.12150192260742,-100.45039367675781" title="My location"></gmp-advanced-marker>
-      <gmp-advanced-marker position="41.12150192260742,-100.45039367675781" title="My location"></gmp-advanced-marker>
-      <gmp-advanced-marker position="41.12150192260742,-101.45039367675781" title="My location"></gmp-advanced-marker>
-      <gmp-advanced-marker position="41.12150192260742,-99.45039367675781" title="My location"></gmp-advanced-marker>
-    </gmp-map>
-  </body>
+</head>
+<body>
+    <h1>Google Maps with MarkerClusterer Example</h1>
+    
+    <div class="controls">
+        <button onclick="addRandomMarkers(50)">Add 50 Random Markers</button>
+        <button onclick="addRandomMarkers(100)">Add 100 Random Markers</button>
+        <button onclick="clearMarkers()">Clear All Markers</button>
+        <button onclick="toggleClusterer()">Toggle Clustering</button>
+        <div class="info">
+            <strong>Instructions:</strong> Add markers to see clustering in action. Zoom in/out to see clusters expand and contract.
+        </div>
+    </div>
+    
+    <div id="map"></div>
+
+    <script>
+        let map;
+        let markerClusterer;
+        let markers = [];
+        let clusteringEnabled = true;
+
+        // Sample locations around major cities for realistic clustering
+        const sampleLocations = [
+            // New York area
+            { lat: 40.7128, lng: -74.0060, title: "New York, NY" },
+            { lat: 40.7489, lng: -73.9857, title: "Times Square" },
+            { lat: 40.7614, lng: -73.9776, title: "Central Park" },
+            { lat: 40.6892, lng: -74.0445, title: "Statue of Liberty" },
+            
+            // Los Angeles area
+            { lat: 34.0522, lng: -118.2437, title: "Los Angeles, CA" },
+            { lat: 34.0928, lng: -118.3287, title: "Beverly Hills" },
+            { lat: 34.1341, lng: -118.3215, title: "Hollywood" },
+            
+            // Chicago area
+            { lat: 41.8781, lng: -87.6298, title: "Chicago, IL" },
+            { lat: 41.8919, lng: -87.6051, title: "Navy Pier" },
+            
+            // Miami area
+            { lat: 25.7617, lng: -80.1918, title: "Miami, FL" },
+            { lat: 25.7907, lng: -80.1300, title: "Miami Beach" },
+        ];
+
+        function initMap() {
+            // Initialize the map
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 4,
+                center: { lat: 39.8283, lng: -98.5795 }, // Center of USA
+                mapTypeId: 'roadmap'
+            });
+
+            // Initialize MarkerClusterer
+            markerClusterer = new MarkerClusterer(map, [], {
+                imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m',
+                gridSize: 60,
+                maxZoom: 15,
+                styles: [
+                    {
+                        textColor: 'white',
+                        url: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m1.png',
+                        height: 53,
+                        width: 53
+                    },
+                    {
+                        textColor: 'white',
+                        url: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m2.png',
+                        height: 56,
+                        width: 56
+                    },
+                    {
+                        textColor: 'white',
+                        url: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m3.png',
+                        height: 66,
+                        width: 66
+                    }
+                ]
+            });
+
+            // Add some initial markers
+            addInitialMarkers();
+        }
+
+        function addInitialMarkers() {
+            sampleLocations.forEach(location => {
+                const marker = new google.maps.Marker({
+                    position: { lat: location.lat, lng: location.lng },
+                    title: location.title,
+                    map: map
+                });
+
+                // Add info window
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `<div><strong>${location.title}</strong><br>
+                             Lat: ${location.lat.toFixed(4)}<br>
+                             Lng: ${location.lng.toFixed(4)}</div>`
+                });
+
+                marker.addListener('click', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                markers.push(marker);
+            });
+
+            // Add markers to clusterer
+            markerClusterer.addMarkers(markers);
+        }
+
+        function addRandomMarkers(count) {
+            const newMarkers = [];
+            
+            for (let i = 0; i < count; i++) {
+                // Generate random coordinates around existing locations for realistic clustering
+                const baseLocation = sampleLocations[Math.floor(Math.random() * sampleLocations.length)];
+                const lat = baseLocation.lat + (Math.random() - 0.5) * 4; // ±2 degrees
+                const lng = baseLocation.lng + (Math.random() - 0.5) * 4; // ±2 degrees
+
+                const marker = new google.maps.Marker({
+                    position: { lat: lat, lng: lng },
+                    title: `Random Marker ${markers.length + i + 1}`,
+                    map: map
+                });
+
+                // Add info window
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `<div><strong>Random Marker ${markers.length + i + 1}</strong><br>
+                             Lat: ${lat.toFixed(4)}<br>
+                             Lng: ${lng.toFixed(4)}</div>`
+                });
+
+                marker.addListener('click', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                newMarkers.push(marker);
+            }
+
+            markers = markers.concat(newMarkers);
+            
+            if (clusteringEnabled) {
+                markerClusterer.addMarkers(newMarkers);
+            }
+        }
+
+        function clearMarkers() {
+            // Clear all markers from the clusterer
+            markerClusterer.clearMarkers();
+            
+            // Remove markers from the map
+            markers.forEach(marker => {
+                marker.setMap(null);
+            });
+            
+            // Clear the markers array
+            markers = [];
+        }
+
+        function toggleClusterer() {
+            if (clusteringEnabled) {
+                // Disable clustering - remove markers from clusterer and add directly to map
+                markerClusterer.clearMarkers();
+                markers.forEach(marker => {
+                    marker.setMap(map);
+                });
+                clusteringEnabled = false;
+                document.querySelector('button[onclick="toggleClusterer()"]').textContent = 'Enable Clustering';
+            } else {
+                // Enable clustering - remove markers from map and add to clusterer
+                markers.forEach(marker => {
+                    marker.setMap(null);
+                });
+                markerClusterer.addMarkers(markers);
+                clusteringEnabled = true;
+                document.querySelector('button[onclick="toggleClusterer()"]').textContent = 'Disable Clustering';
+            }
+        }
+    </script>
+
+    <!-- Load MarkerClusterer library -->
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    
+    <!-- Load Google Maps API -->
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlCk-atEVMbumOwpDHnUKSos9djbzuEpU&callback=initMap">
+    </script>
+</body>
 </html>
