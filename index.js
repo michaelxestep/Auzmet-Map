@@ -11,11 +11,19 @@ function initMap() {
     zoom: 13,
   });
 
-  const marker = new google.maps.AdvancedMarkerElement({
+  const marker1 = new google.maps.AdvancedMarkerElement({
     map: map,
     position: { lat: -25.344, lng: 131.031 },
     title: "Uluru",
   });
+
+  const marker2 = new google.maps.AdvancedMarkerElement({
+    map: map,
+    position: { lat: -27.344, lng: 132.031 },
+    title: "Uluru2",
+  });
+
+  const markerCluster = new markerClusterer.MarkerClusterer({ map, [marker1, marker2] });
   // const input = document.getElementById("pac-input");
   // // Specify just the place data fields that you need.
   // const autocomplete = new google.maps.places.Autocomplete(input, {
@@ -27,14 +35,11 @@ function initMap() {
 
   const infowindow = new google.maps.InfoWindow();
   const infowindowContent = document.getElementById("infowindow-content");
-
   infowindow.setContent(infowindowContent);
 
-  const marker = new google.maps.Marker({ map: map });
-
-  marker.addListener("click", () => {
-    infowindow.open(map, marker);
-  });
+  // marker.addListener("click", () => {
+  //   infowindow.open(map, marker);
+  // });
   // autocomplete.addListener("place_changed", () => {
   //   infowindow.close();
 
