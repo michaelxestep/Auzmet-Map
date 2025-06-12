@@ -110,9 +110,10 @@
 
         function addInitialMarkers() {
             sampleLocations.forEach(location => {
-                const marker = new google.maps.Marker({
+                const marker = new google.maps.marker.AdvancedMarkerElement({
                     position: { lat: location.lat, lng: location.lng },
-                    title: location.title
+                    title: location.title,
+                    map: null // Don't add to map directly, let clusterer handle it
                 });
 
                 // Add info window
@@ -123,7 +124,10 @@
                 });
 
                 marker.addListener('click', () => {
-                    infoWindow.open(map, marker);
+                    infoWindow.open({
+                        anchor: marker,
+                        map: map
+                    });
                 });
 
                 markers.push(marker);
@@ -142,9 +146,10 @@
                 const lat = baseLocation.lat + (Math.random() - 0.5) * 4; // ±2 degrees
                 const lng = baseLocation.lng + (Math.random() - 0.5) * 4; // ±2 degrees
 
-                const marker = new google.maps.Marker({
+                const marker = new google.maps.marker.AdvancedMarkerElement({
                     position: { lat: lat, lng: lng },
-                    title: `Random Marker ${markers.length + i + 1}`
+                    title: `Random Marker ${markers.length + i + 1}`,
+                    map: null // Don't add to map directly
                 });
 
                 // Add info window
@@ -155,7 +160,10 @@
                 });
 
                 marker.addListener('click', () => {
-                    infoWindow.open(map, marker);
+                    infoWindow.open({
+                        anchor: marker,
+                        map: map
+                    });
                 });
 
                 newMarkers.push(marker);
@@ -168,7 +176,7 @@
             } else {
                 // If clustering is disabled, add markers directly to map
                 newMarkers.forEach(marker => {
-                    marker.setMap(map);
+                    marker.map = map;
                 });
             }
         }
@@ -179,7 +187,7 @@
             
             // Remove markers from the map (in case clustering is disabled)
             markers.forEach(marker => {
-                marker.setMap(null);
+                marker.map = null;
             });
             
             // Clear the markers array
@@ -191,14 +199,14 @@
                 // Disable clustering - remove markers from clusterer and add directly to map
                 markerClusterer.clearMarkers();
                 markers.forEach(marker => {
-                    marker.setMap(map);
+                    marker.map = map;
                 });
                 clusteringEnabled = false;
                 document.querySelector('button[onclick="toggleClusterer()"]').textContent = 'Enable Clustering';
             } else {
                 // Enable clustering - remove markers from map and add to clusterer
                 markers.forEach(marker => {
-                    marker.setMap(null);
+                    marker.map = null;
                 });
                 markerClusterer.addMarkers(markers);
                 clusteringEnabled = true;
@@ -210,9 +218,9 @@
     <!-- Load MarkerClusterer library -->
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
     
-    <!-- Load Google Maps API -->
+    <!-- Load Google Maps API with marker library -->
     <script async defer 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlCk-atEVMbumOwpDHnUKSos9djbzuEpU&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlCk-atEVMbumOwpDHnUKSos9djbzuEpU&callback=initMap&libraries=marker">
     </script>
 </body>
 </html>
