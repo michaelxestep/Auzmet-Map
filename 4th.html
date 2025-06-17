@@ -624,7 +624,7 @@ function initMap() {
   // Load CSV data with better error handling
   console.log('Attempting to load CSV data...');
   
-  Papa.parse('./data.csv', {
+  Papa.parse('https://docs.google.com/spreadsheets/d/1gxngYMkg1_r6ShFZGSgH5lMuGWf7BgL07KWWMnhO-QY/export?format=csv', {
     download: true,
     header: true,
     skipEmptyLines: true,
