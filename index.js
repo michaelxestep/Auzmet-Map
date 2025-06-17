@@ -1,10 +1,3 @@
-// This sample uses the Place Autocomplete widget to allow the user to search
-// for and select a place. The sample then displays an info window containing
-// the place ID and other information about the place that the user has
-// selected.
-// This example requires the Places library. Include the libraries=places
-// parameter when you first load the API. For example:
-// <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
 const renderer = {
   render: ({ count, position }) => {
     // Create a custom blue cluster marker
@@ -32,9 +25,210 @@ const renderer = {
 };
 
 function initMap() {
+  const mapStyle = [
+    {
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#f8f9fa"
+        }
+      ]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#5f6368"
+        }
+      ]
+    },
+    {
+      "elementType": "labels.text.stroke",
+      "stylers": [
+        {
+          "color": "#ffffff"
+        },
+        {
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "featureType": "administrative",
+      "elementType": "geometry.stroke",
+      "stylers": [
+        {
+          "color": "#dadce0"
+        },
+        {
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.country",
+      "elementType": "geometry.stroke",
+      "stylers": [
+        {
+          "color": "#9aa0a6"
+        },
+        {
+          "weight": 1.2
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.province",
+      "elementType": "geometry.stroke",
+      "stylers": [
+        {
+          "color": "#c8ced3"
+        },
+        {
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.locality",
+      "elementType": "labels.text",
+      "stylers": [
+        {
+          "visibility": "on"
+        },
+        {
+          "color": "#9aa0a6"
+        },
+        {
+          "weight": "0.5"
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.land_parcel",
+      "stylers": [
+        {
+          "visibility": "off"
+        }
+      ]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.icon",
+      "stylers": [
+        {
+          "visibility": "off"
+        }
+      ]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text",
+      "stylers": [
+        {
+          "visibility": "off"
+        }
+      ]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#e8f0fe"
+        }
+      ]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text",
+      "stylers": [
+        {
+          "visibility": "simplified"
+        }
+      ]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#e8eaed"
+        }
+      ]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#5f6368"
+        }
+      ]
+    },
+    {
+      "featureType": "road.arterial",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#80868b"
+        }
+      ]
+    },
+    {
+      "featureType": "road.local",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#9aa0a6"
+        }
+      ]
+    },
+    {
+      "featureType": "transit",
+      "stylers": [
+        {
+          "visibility": "off"
+        }
+      ]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#d2e3fc"
+        }
+      ]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#9aa0a6"
+        }
+      ]
+    }
+  ];
+
   const map = new google.maps.Map(document.getElementById("map"), {
     center: { lat: 36.8283, lng: -98.5795 },
     zoom: 5,
+    styles: mapStyle,
+    disableDefaultUI: false, // Set to true to remove all UI controls
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
   });
 
   const customIcon = {
@@ -63,18 +257,18 @@ function initMap() {
 
         marker.addListener("click", () => {
           infowindowContent.children.namedItem("place-job-name").textContent = point['Job Name'];
-          infowindowContent.children.namedItem("place-year-completed").textContent = point['Year Completed'];
-          infowindowContent.children.namedItem("place-status").textContent = point['Status'];
-          infowindowContent.children.namedItem("place-job-number").textContent = point['Job Number'];
-          infowindowContent.children.namedItem("place-sector").textContent = point['Sector'];
-          infowindowContent.children.namedItem("place-contractor").textContent = point['Contractor'];
-          infowindowContent.children.namedItem("place-project-address").textContent = point['Project Address'];
-          infowindowContent.children.namedItem("place-link").textContent = point['Link'];
           if (point['Link']) {
-            infowindowContent.children.namedItem("place-link").hidden = false;
-          } else {
-            infowindowContent.children.namedItem("place-link").hidden = true;
+            infowindowContent.children.namedItem("place-job-name").innerHTML = `<a href="${point['Link']}" target="_blank">${point['Job Name']}</a>`;
           }
+          infowindowContent.querySelector("#place-year-completed").textContent = point['Year Completed'];
+          if (point['Status'] === 'Complete') {
+            infowindowContent.children.namedItem("infowindow-item-year-completed").hidden = false;
+          } else {
+            infowindowContent.children.namedItem("infowindow-item-year-completed").hidden = true;
+          }
+          infowindowContent.children.namedItem("place-sector").textContent = point['Sector'];
+          infowindowContent.children.namedItem("place-status").textContent = point['Status'];
+          infowindowContent.children.namedItem("place-contractor").textContent = point['Contractor'];
 
           infowindow.open(map, marker);
         });
@@ -85,50 +279,6 @@ function initMap() {
       const markerCluster = new markerClusterer.MarkerClusterer({ map, markers, renderer });
     }
   });
-
-  
-  // const input = document.getElementById("pac-input");
-  // // Specify just the place data fields that you need.
-  // const autocomplete = new google.maps.places.Autocomplete(input, {
-  //   fields: ["place_id", "geometry", "formatted_address", "name"],
-  // });
-
-  // autocomplete.bindTo("bounds", map);
-  // map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
-
-  // marker.addListener("click", () => {
-  //   infowindow.open(map, marker);
-  // });
-  // autocomplete.addListener("place_changed", () => {
-  //   infowindow.close();
-
-  //   const place = autocomplete.getPlace();
-
-  //   if (!place.geometry || !place.geometry.location) {
-  //     return;
-  //   }
-
-  //   if (place.geometry.viewport) {
-  //     map.fitBounds(place.geometry.viewport);
-  //   } else {
-  //     map.setCenter(place.geometry.location);
-  //     map.setZoom(17);
-  //   }
-
-  //   // Set the position of the marker using the place ID and location.
-  //   // @ts-ignore This should be in @typings/googlemaps.
-  //   marker.setPlace({
-  //     placeId: place.place_id,
-  //     location: place.geometry.location,
-  //   });
-  //   marker.setVisible(true);
-  //   infowindowContent.children.namedItem("place-name").textContent = place.name;
-  //   infowindowContent.children.namedItem("place-id").textContent =
-  //     place.place_id;
-  //   infowindowContent.children.namedItem("place-address").textContent =
-  //     place.formatted_address;
-  //   infowindow.open(map, marker);
-  // });
 }
 
 window.initMap = initMap;
