@@ -1,0 +1,945 @@
+<html>
+  <head>
+    <title>Auzmet Map</title>
+
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <script src="./index.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      html, body {
+        height: 100%;
+        overflow: hidden;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .filter-container {
+        flex-shrink: 0;
+        padding: 16px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #dadce0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
+      .filter-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: 16px;
+        align-items: end;
+        margin-bottom: 12px;
+      }
+      
+      @media (max-width: 1200px) {
+        .filter-row {
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        
+        .filter-group:first-child {
+          grid-column: 1 / -1;
+        }
+      }
+      
+      @media (max-width: 768px) {
+        .filter-row {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        
+        .filter-container {
+          padding: 12px;
+        }
+      }
+      
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      
+      .filter-group label {
+        font-weight: 500;
+        color: #5f6368;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      
+      input[type="text"], select {
+        padding: 10px 12px;
+        border: 1px solid #dadce0;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        width: 100%;
+        min-width: 0;
+      }
+      
+      input[type="text"]:focus, select:focus {
+        outline: none;
+        border-color: #1976D2;
+        box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+      }
+      
+      .clear-filters {
+        background: #1976D2;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+        align-self: end;
+      }
+      
+      .clear-filters:hover {
+        background: #1565C0;
+      }
+      
+      .clear-filters:active {
+        background: #0d47a1;
+      }
+      
+      .results-count {
+        font-size: 13px;
+        color: #5f6368;
+        margin-top: 8px;
+        font-weight: 500;
+      }
+      
+      #map {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+      }
+      
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      
+      .loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #1976D2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Custom InfoWindow styles for grouped projects */
+      .grouped-info-window {
+        max-width: 400px;
+        max-height: 500px;
+      }
+
+      .grouped-header {
+        font-size: 16px;
+        font-weight: bold;
+        color: #1976D2;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e0e0e0;
+      }
+
+      .projects-list {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 5px;
+      }
+
+      .project-item {
+        background: #f8f9fa;
+        border: 1px solid #dadce0;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 8px;
+        transition: background-color 0.2s;
+      }
+
+      .project-item:hover {
+        background: #e8f0fe;
+      }
+
+      .project-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .project-name {
+        font-weight: bold;
+        color: #1565C0;
+        margin-bottom: 4px;
+      }
+
+      .project-details {
+        font-size: 13px;
+        color: #5f6368;
+        line-height: 1.4;
+      }
+
+      .project-link {
+        color: #1976D2;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .project-link:hover {
+        text-decoration: underline;
+      }
+
+      /* Scrollbar styling */
+      .projects-list::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .projects-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+      }
+
+      .projects-list::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+      }
+
+      .projects-list::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="display: none">
+      <input
+        id="pac-input"
+        class="controls"
+        type="text"
+        placeholder="Enter a location"
+      />
+    </div>
+
+    <div class="filter-container">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Search Projects</label>
+          <input type="text" id="search-input" placeholder="Search by job name, contractor, or location...">
+        </div>
+        
+        <div class="filter-group">
+          <label>Sector</label>
+          <select id="sector-filter">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Status</label>
+          <select id="status-filter">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Contractor</label>
+          <select id="contractor-filter">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+        
+        <button class="clear-filters" id="clear-filters-btn">Clear Filters</button>
+      </div>
+      <div class="results-count" id="results-count">Loading data...</div>
+    </div>
+
+    <div id="map"></div>
+    
+    <div id="infowindow-content">
+      <strong>Job name:</strong>
+      <span id="place-job-name"></span><br />
+
+      <strong>Sector:</strong>
+      <span id="place-sector"></span><br />
+
+      <strong>Status:</strong>
+      <span id="place-status"></span><br />
+
+      <strong>Contractor:</strong>
+      <span id="place-contractor"></span><br />
+
+      <div id="infowindow-item-year-completed">
+        <strong>Year completed:</strong>
+        <span id="place-year-completed"></span><br />
+      </div>
+    </div>
+
+    <!-- 
+      The `defer` attribute causes the script to execute after the full HTML
+      document has been parsed. For non-blocking uses, avoiding race conditions,
+      and consistent behavior across browsers, consider loading using Promises. See
+      https://developers.google.com/maps/documentation/javascript/load-maps-js-api
+      for more information.
+      -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlCk-atEVMbumOwpDHnUKSos9djbzuEpU&callback=initMap&libraries=places&v=weekly"
+      defer
+    ></script>
+
+    <script>
+let map;
+let allData = [];
+let allMarkers = [];
+let markerCluster;
+let infowindow;
+
+const clusterRenderer = {
+  render: ({ count, position }) => {
+    // Create a custom blue cluster marker
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
+        <circle cx="25" cy="25" r="20" fill="#1976D2" stroke="white" stroke-width="3"/>
+        <text x="25" y="30" font-family="Arial" font-size="14" fill="white" text-anchor="middle" font-weight="bold">${count}</text>
+      </svg>
+    `;
+    
+    return new google.maps.Marker({
+      position,
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+        scaledSize: new google.maps.Size(50, 50)
+      },
+      label: {
+        text: String(count),
+        color: 'white',
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }
+    });
+  }
+};
+
+function initMap() {
+  const mapStyle = [
+    {
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#f8f9fa"
+        }
+      ]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#5f6368"
+        }
+      ]
+    },
+    {
+      "elementType": "labels.text.stroke",
+      "stylers": [
+        {
+          "color": "#ffffff"
+        },
+        {
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "featureType": "administrative",
+      "elementType": "geometry.stroke",
+      "stylers": [
+        {
+          "color": "#dadce0"
+        },
+        {
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.country",
+      "elementType": "geometry.stroke",
+      "stylers": [
+        {
+          "color": "#9aa0a6"
+        },
+        {
+          "weight": 1.2
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.province",
+      "elementType": "geometry.stroke",
+      "stylers": [
+        {
+          "color": "#c8ced3"
+        },
+        {
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.locality",
+      "elementType": "labels.text",
+      "stylers": [
+        {
+          "visibility": "on"
+        },
+        {
+          "color": "#9aa0a6"
+        },
+        {
+          "weight": "0.5"
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.land_parcel",
+      "stylers": [
+        {
+          "visibility": "off"
+        }
+      ]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.icon",
+      "stylers": [
+        {
+          "visibility": "off"
+        }
+      ]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text",
+      "stylers": [
+        {
+          "visibility": "off"
+        }
+      ]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#e8f0fe"
+        }
+      ]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text",
+      "stylers": [
+        {
+          "visibility": "simplified"
+        }
+      ]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#e8eaed"
+        }
+      ]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#5f6368"
+        }
+      ]
+    },
+    {
+      "featureType": "road.arterial",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#80868b"
+        }
+      ]
+    },
+    {
+      "featureType": "road.local",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#9aa0a6"
+        }
+      ]
+    },
+    {
+      "featureType": "transit",
+      "stylers": [
+        {
+          "visibility": "off"
+        }
+      ]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#d2e3fc"
+        }
+      ]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#9aa0a6"
+        }
+      ]
+    }
+  ];
+
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: 36.8283, lng: -98.5795 },
+    zoom: 5,
+    styles: mapStyle,
+    disableDefaultUI: false,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+  });
+
+  infowindow = new google.maps.InfoWindow();
+
+  // Add zoom change listener to redraw markers based on zoom level
+  map.addListener('zoom_changed', () => {
+    // Small delay to ensure zoom has completed
+    setTimeout(() => {
+      if (allData && allData.length > 0) {
+        // Re-apply current filters with new zoom level
+        applyFilters();
+      }
+    }, 100);
+  });
+
+  // Add loading state to filters
+  const filterContainer = document.querySelector('.filter-container');
+  filterContainer.classList.add('loading');
+
+  // Load CSV data with better error handling
+  console.log('Attempting to load CSV data...');
+  
+  Papa.parse('./data.csv', {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: function(header) {
+      // Clean headers by trimming whitespace
+      return header.trim();
+    },
+    complete: function(results) {
+      console.log('CSV parsing complete!');
+      console.log('Raw results:', results);
+      console.log('Data rows:', results.data.length);
+      console.log('Errors:', results.errors);
+      
+      if (results.errors && results.errors.length > 0) {
+        console.warn('CSV parsing errors:', results.errors);
+      }
+      
+      // Filter out rows without coordinates and clean the data
+      allData = results.data.filter(row => {
+        const hasCoords = row.Latitude && 
+               row.Longitude && 
+               !isNaN(parseFloat(row.Latitude)) && 
+               !isNaN(parseFloat(row.Longitude));
+        return hasCoords;
+      }).map(row => {
+        // Clean up the data - trim whitespace and handle empty values
+        const cleanRow = {};
+        Object.keys(row).forEach(key => {
+          cleanRow[key] = row[key] ? row[key].toString().trim() : '';
+        });
+        return cleanRow;
+      });
+
+      console.log('Filtered data:', allData.length, 'valid rows');
+      if (allData.length > 0) {
+        console.log('Sample data:', allData[0]);
+        console.log('Available columns:', Object.keys(allData[0]));
+      }
+
+      // Remove loading state
+      filterContainer.classList.remove('loading');
+
+      if (allData.length === 0) {
+        document.getElementById('results-count').textContent = 'No valid data found in CSV';
+        // Still populate empty dropdowns
+        populateSelect('sector-filter', [], 'All Sectors');
+        populateSelect('status-filter', [], 'All Status');
+        populateSelect('contractor-filter', [], 'All Contractors');
+      } else {
+        // Populate dropdowns with actual data
+        populateFilterDropdowns();
+        
+        // Create markers
+        createMarkersFromData(allData);
+        
+        // Update results count
+        updateResultsCount(allData.length);
+      }
+      
+      // Setup event listeners regardless
+      setupFilterListeners();
+    },
+    error: function(error) {
+      console.error('Error loading CSV:', error);
+      document.getElementById('results-count').textContent = 'Error loading data.csv file';
+      filterContainer.classList.remove('loading');
+      
+      // Populate empty dropdowns
+      populateSelect('sector-filter', [], 'All Sectors');
+      populateSelect('status-filter', [], 'All Status'); 
+      populateSelect('contractor-filter', [], 'All Contractors');
+      
+      setupFilterListeners();
+    }
+  });
+}
+
+function populateFilterDropdowns() {
+  console.log('Populating dropdowns...');
+  
+  // Get unique values for each filter, excluding empty values
+  const sectors = [...new Set(allData
+    .map(item => item.Sector)
+    .filter(value => value && value.trim() !== '')
+  )].sort();
+  
+  const statuses = [...new Set(allData
+    .map(item => item.Status)
+    .filter(value => value && value.trim() !== '')
+  )].sort();
+  
+  const contractors = [...new Set(allData
+    .map(item => item.Contractor)
+    .filter(value => value && value.trim() !== '')
+  )].sort();
+
+  console.log('Sectors:', sectors);
+  console.log('Statuses:', statuses);
+  console.log('Contractors:', contractors);
+
+  // Populate the dropdowns
+  populateSelect('sector-filter', sectors, 'All Sectors');
+  populateSelect('status-filter', statuses, 'All Status');
+  populateSelect('contractor-filter', contractors, 'All Contractors');
+}
+
+function populateSelect(selectId, options, defaultText) {
+  const select = document.getElementById(selectId);
+  
+  // Clear existing options
+  select.innerHTML = '';
+  
+  // Add default "All" option
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = defaultText;
+  select.appendChild(defaultOption);
+  
+  // Add options from data
+  options.forEach(option => {
+    if (option && option.trim() !== '') {
+      const optionElement = document.createElement('option');
+      optionElement.value = option;
+      optionElement.textContent = option;
+      select.appendChild(optionElement);
+    }
+  });
+}
+
+function createMarkersFromData(data) {
+  // Clear existing markers
+  if (markerCluster) {
+    markerCluster.clearMarkers();
+  }
+  allMarkers = [];
+
+  // Group projects by location
+  const locationGroups = groupProjectsByLocation(data);
+
+  locationGroups.forEach(group => {
+    const lat = parseFloat(group.projects[0].Latitude);
+    const lng = parseFloat(group.projects[0].Longitude);
+    
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    let marker;
+    let icon;
+
+    if (group.projects.length === 1) {
+      // Single project - use regular blue pin
+      marker = new google.maps.Marker({
+        map: map,
+        position: { lat: lat, lng: lng },
+        title: group.projects[0]['Job Name'] || 'Unnamed Project',
+        icon: {
+          url: './map-pin.png',
+          scaledSize: new google.maps.Size(40, 40),
+        }
+      });
+
+      console.log(`Created single marker for: ${group.projects[0]['Job Name']}`);
+
+      // Single project click handler
+      marker.addListener("click", () => {
+        const point = group.projects[0];
+        const infoContent = createSingleProjectInfoContent(point);
+        infowindow.setContent(infoContent);
+        infowindow.open(map, marker);
+      });
+
+    } else {
+      // Multiple projects - use orange grouped marker
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
+          <circle cx="25" cy="25" r="20" fill="#FF6B35" stroke="white" stroke-width="3"/>
+          <text x="25" y="30" font-family="Arial" font-size="12" fill="white" text-anchor="middle" font-weight="bold">${group.projects.length}</text>
+        </svg>
+      `;
+      
+      marker = new google.maps.Marker({
+        map: map,
+        position: { lat: lat, lng: lng },
+        title: `${group.projects.length} projects at this location`,
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+          scaledSize: new google.maps.Size(50, 50),
+          anchor: new google.maps.Point(25, 40)
+        }
+      });
+
+      console.log(`Created grouped marker for ${group.projects.length} projects at ${lat}, ${lng}`);
+
+      // Multiple projects click handler
+      marker.addListener("click", () => {
+        const infoContent = createGroupedProjectsInfoContent(group);
+        infowindow.setContent(infoContent);
+        infowindow.open(map, marker);
+      });
+    }
+
+    allMarkers.push(marker);
+  });
+
+  // Note: We're handling location grouping manually above, 
+  // so we don't need the automatic marker clusterer
+}
+
+function groupProjectsByLocation(data, zoomLevel = 10) {
+  const groups = new Map();
+  
+  // Adjust precision based on zoom level
+  // Higher zoom = more precision = less grouping
+  // Lower zoom = less precision = more grouping
+  let precision;
+  if (zoomLevel <= 6) {
+    precision = 1; // Group within ~111km
+  } else if (zoomLevel <= 8) {
+    precision = 2; // Group within ~11km  
+  } else if (zoomLevel <= 10) {
+    precision = 3; // Group within ~1.1km
+  } else if (zoomLevel <= 12) {
+    precision = 4; // Group within ~110m
+  } else {
+    precision = 5; // Group within ~11m (very precise)
+  }
+  
+  data.forEach(project => {
+    const lat = parseFloat(project.Latitude);
+    const lng = parseFloat(project.Longitude);
+    
+    if (isNaN(lat) || isNaN(lng)) return;
+    
+    // Create location key based on zoom level precision
+    const locationKey = `${lat.toFixed(precision)},${lng.toFixed(precision)}`;
+    
+    if (!groups.has(locationKey)) {
+      groups.set(locationKey, {
+        location: { lat, lng },
+        projects: []
+      });
+    }
+    
+    groups.get(locationKey).projects.push(project);
+  });
+  
+  console.log(`Zoom level ${zoomLevel}: Created ${groups.size} location groups with precision ${precision}`);
+  const groupArray = Array.from(groups.values());
+  const multiProjectGroups = groupArray.filter(group => group.projects.length > 1);
+  console.log(`${multiProjectGroups.length} groups have multiple projects`);
+  
+  return groupArray;
+}
+
+function createSingleProjectInfoContent(point) {
+  return `
+    <div>
+      <strong>Job name:</strong>
+      <span>${
+        point['Link'] && point['Link'].trim() !== '' 
+          ? `<a href="${point['Link']}" target="_blank" class="project-link">${point['Job Name'] || 'Unnamed Project'}</a>`
+          : point['Job Name'] || 'Unnamed Project'
+      }</span><br />
+
+      <strong>Sector:</strong>
+      <span>${point['Sector'] || 'Not specified'}</span><br />
+
+      <strong>Status:</strong>
+      <span>${point['Status'] || 'Not specified'}</span><br />
+
+      <strong>Contractor:</strong>
+      <span>${point['Contractor'] || 'Not specified'}</span><br />
+
+      ${point['Status'] && point['Status'].toLowerCase() === 'complete' && point['Year Completed'] 
+        ? `<strong>Year completed:</strong>
+           <span>${point['Year Completed']}</span><br />`
+        : ''
+      }
+    </div>
+  `;
+}
+
+function createGroupedProjectsInfoContent(group) {
+  const location = group.projects[0]['Location'] || 'Same Location';
+  
+  let content = `
+    <div class="grouped-info-window">
+      <div class="grouped-header">
+        ${group.projects.length} Projects at ${location}
+      </div>
+      <div class="projects-list">
+  `;
+  
+  group.projects.forEach(project => {
+    content += `
+      <div class="project-item">
+        <div class="project-name">
+          ${project['Link'] && project['Link'].trim() !== '' 
+            ? `<a href="${project['Link']}" target="_blank" class="project-link">${project['Job Name'] || 'Unnamed Project'}</a>`
+            : project['Job Name'] || 'Unnamed Project'
+          }
+        </div>
+        <div class="project-details">
+          <strong>Sector:</strong> ${project['Sector'] || 'Not specified'}<br/>
+          <strong>Status:</strong> ${project['Status'] || 'Not specified'}<br/>
+          <strong>Contractor:</strong> ${project['Contractor'] || 'Not specified'}
+          ${project['Status'] && project['Status'].toLowerCase() === 'complete' && project['Year Completed'] 
+            ? `<br/><strong>Year completed:</strong> ${project['Year Completed']}`
+            : ''
+          }
+        </div>
+      </div>
+    `;
+  });
+  
+  content += `
+      </div>
+    </div>
+  `;
+  
+  return content;
+}
+
+function setupFilterListeners() {
+  document.getElementById('search-input').addEventListener('input', applyFilters);
+  document.getElementById('sector-filter').addEventListener('change', applyFilters);
+  document.getElementById('status-filter').addEventListener('change', applyFilters);
+  document.getElementById('contractor-filter').addEventListener('change', applyFilters);
+  document.getElementById('clear-filters-btn').addEventListener('click', clearAllFilters);
+}
+
+function applyFilters() {
+  const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+  const sectorFilter = document.getElementById('sector-filter').value;
+  const statusFilter = document.getElementById('status-filter').value;
+  const contractorFilter = document.getElementById('contractor-filter').value;
+
+  const filteredData = allData.filter(item => {
+    // Search filter - check job name, contractor, and location
+    const matchesSearch = !searchTerm || 
+      (item['Job Name'] && item['Job Name'].toLowerCase().includes(searchTerm)) ||
+      (item['Contractor'] && item['Contractor'].toLowerCase().includes(searchTerm)) ||
+      (item['Sector'] && item['Sector'].toLowerCase().includes(searchTerm)) ||
+      (item['Location'] && item['Location'].toLowerCase().includes(searchTerm));
+
+    // Dropdown filters
+    const matchesSector = !sectorFilter || item['Sector'] === sectorFilter;
+    const matchesStatus = !statusFilter || item['Status'] === statusFilter;
+    const matchesContractor = !contractorFilter || item['Contractor'] === contractorFilter;
+
+    return matchesSearch && matchesSector && matchesStatus && matchesContractor;
+  });
+
+  createMarkersFromData(filteredData);
+  updateResultsCount(filteredData.length);
+}
+
+function clearAllFilters() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('sector-filter').value = '';
+  document.getElementById('status-filter').value = '';
+  document.getElementById('contractor-filter').value = '';
+  applyFilters();
+}
+
+function updateResultsCount(count) {
+  document.getElementById('results-count').textContent = 
+    `Showing ${count} of ${allData.length} projects`;
+}
+
+// Make initMap available globally
+window.initMap = initMap;
+</script>
+  </body>
+</html>
