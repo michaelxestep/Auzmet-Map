@@ -1,0 +1,51 @@
+<html>
+  <head>
+    <title>Auzmet Map</title>
+
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <script src="./index.js"></script>
+  </head>
+  <body>
+    <div style="display: none">
+      <input
+        id="pac-input"
+        class="controls"
+        type="text"
+        placeholder="Enter a location"
+      />
+    </div>
+    <div id="map"></div>
+    <div id="infowindow-content">
+      <strong>Job name:</strong>
+      <span id="place-job-name"></span><br />
+
+      <strong>Sector:</strong>
+      <span id="place-sector"></span><br />
+
+      <strong>Status:</strong>
+      <span id="place-status"></span><br />
+
+      <strong>Contractor:</strong>
+      <span id="place-contractor"></span><br />
+
+      <div id="infowindow-item-year-completed">
+        <strong>Year completed:</strong>
+        <span id="place-year-completed"></span><br />
+      </div>
+    </div>
+
+    <!-- 
+      The `defer` attribute causes the script to execute after the full HTML
+      document has been parsed. For non-blocking uses, avoiding race conditions,
+      and consistent behavior across browsers, consider loading using Promises. See
+      https://developers.google.com/maps/documentation/javascript/load-maps-js-api
+      for more information.
+      -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAlCk-atEVMbumOwpDHnUKSos9djbzuEpU&callback=initMap&libraries=places&v=weekly"
+      defer
+    ></script>
+  </body>
+</html>
